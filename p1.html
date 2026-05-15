@@ -1,0 +1,2613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkillSwap — Trade What You Know</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1a1410;
+    --paper: #f5f0e8;
+    --cream: #ede7d9;
+    --rust: #c4501a;
+    --rust-light: #f0d4c4;
+    --moss: #3d5a3e;
+    --moss-light: #d4e0c4;
+    --gold: #b8860b;
+    --gold-light: #f5e6b0;
+    --muted: #7a6f60;
+    --border: rgba(26,20,16,0.15);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE TEXTURE ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 1.2rem 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(245,240,232,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--ink);
+    text-decoration: none;
+    letter-spacing: -0.02em;
+  }
+
+  .logo span { color: var(--rust); font-style: italic; }
+
+  nav ul {
+    list-style: none;
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  nav a {
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--muted);
+    transition: color 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  nav a:hover { color: var(--ink); }
+
+  .nav-cta {
+    background: var(--ink) !important;
+    color: var(--paper) !important;
+    padding: 0.5rem 1.25rem;
+    border-radius: 2px;
+    font-weight: 500 !important;
+    transition: background 0.2s !important;
+  }
+  .nav-cta:hover { background: var(--rust) !important; }
+
+  .nav-login {
+    color: var(--muted) !important;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+  .nav-login:hover { color: var(--ink) !important; }
+
+  /* ── MODAL OVERLAY ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,20,16,0.55);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; animation: overlayIn 0.2s ease; }
+  @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    width: 100%;
+    max-width: 420px;
+    padding: 2.5rem 2.5rem 2rem;
+    position: relative;
+    animation: modalIn 0.25s ease;
+  }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+  .modal-close {
+    position: absolute;
+    top: 1.25rem; right: 1.25rem;
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: var(--muted);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.2rem 0.4rem;
+    border-radius: 2px;
+    transition: color 0.2s, background 0.2s;
+  }
+  .modal-close:hover { color: var(--ink); background: var(--cream); }
+
+  .modal-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 1.75rem;
+    letter-spacing: -0.02em;
+  }
+  .modal-logo span { color: var(--rust); font-style: italic; }
+
+  .modal h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.4rem;
+    color: var(--ink);
+  }
+
+  .modal-sub {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 1.75rem;
+    line-height: 1.6;
+  }
+
+  .modal-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .modal-tab {
+    padding: 0.6rem 1.25rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    margin-bottom: -1px;
+  }
+  .modal-tab.active { color: var(--ink); border-bottom-color: var(--rust); font-weight: 500; }
+
+  .form-group { margin-bottom: 1rem; }
+
+  .form-group label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+
+  .form-group input, .form-group select {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: var(--paper);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    color: var(--ink);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    appearance: none;
+  }
+
+  .form-group input:focus, .form-group select:focus {
+    border-color: var(--rust);
+    box-shadow: 0 0 0 3px rgba(196,80,26,0.1);
+  }
+
+  .form-group input.error { border-color: #c0392b; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+  .input-hint {
+    font-size: 0.72rem;
+    color: #c0392b;
+    margin-top: 0.3rem;
+    display: none;
+  }
+  .input-hint.show { display: block; }
+
+  .form-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1.25rem 0;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .form-divider::before, .form-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .btn-google {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: var(--paper);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem;
+    color: var(--ink);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    transition: background 0.2s, border-color 0.2s;
+    margin-bottom: 1rem;
+  }
+  .btn-google:hover { background: var(--cream); border-color: rgba(26,20,16,0.3); }
+
+  .btn-submit {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 0.25rem;
+    letter-spacing: 0.02em;
+  }
+  .btn-submit:hover { background: var(--rust); }
+
+  .modal-switch {
+    text-align: center;
+    margin-top: 1.25rem;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  .modal-switch a { color: var(--rust); text-decoration: none; font-weight: 500; cursor: pointer; }
+  .modal-switch a:hover { text-decoration: underline; }
+
+  .success-state {
+    text-align: center;
+    padding: 1.5rem 0;
+    display: none;
+  }
+  .success-icon {
+    width: 56px;
+    height: 56px;
+    background: var(--moss-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto 1.25rem;
+  }
+  .success-state h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+  }
+  .success-state p { font-size: 0.85rem; color: var(--muted); line-height: 1.7; }
+
+  /* logged-in nav state */
+  .nav-user {
+    display: none;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .nav-user.visible { display: flex; }
+  .nav-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--rust-light);
+    color: var(--rust);
+    font-size: 0.75rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .nav-username { font-size: 0.85rem; font-weight: 500; color: var(--ink); }
+  .nav-signout {
+    font-size: 0.78rem;
+    color: var(--muted);
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    transition: color 0.2s;
+    padding: 0;
+  }
+  .nav-signout:hover { color: var(--rust); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding-top: 80px;
+    position: relative;
+  }
+
+  .hero-left {
+    padding: 6rem 3rem 4rem 5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .hero-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--rust);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    display: block;
+    width: 2rem;
+    height: 1px;
+    background: var(--rust);
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.8rem, 5vw, 4.5rem);
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.5rem;
+    color: var(--ink);
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--rust);
+    display: block;
+  }
+
+  .hero-desc {
+    font-size: 1.05rem;
+    color: var(--muted);
+    max-width: 400px;
+    line-height: 1.8;
+    margin-bottom: 2.5rem;
+  }
+
+  .hero-actions { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+
+  .btn-primary {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0.85rem 2rem;
+    border: none;
+    border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: background 0.2s, transform 0.1s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-primary:hover { background: var(--rust); transform: translateY(-1px); }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--ink);
+    padding: 0.85rem 2rem;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 400;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: border-color 0.2s, background 0.2s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-secondary:hover { border-color: var(--ink); background: var(--cream); }
+
+  .hero-stats {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 2.5rem;
+  }
+
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--ink);
+    display: block;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-top: 0.25rem;
+  }
+
+  /* ── HERO RIGHT ILLUSTRATION ── */
+  .hero-right {
+    position: relative;
+    overflow: hidden;
+    background: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .swap-visual {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+  }
+
+  .swap-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 380px;
+  }
+
+  .swap-card {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: relative;
+    transition: transform 0.3s, box-shadow 0.3s;
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .swap-card:nth-child(2) { animation-delay: -2s; margin-left: 2rem; }
+  .swap-card:nth-child(3) { animation-delay: -4s; }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .swap-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(26,20,16,0.12); }
+
+  .card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .icon-rust { background: var(--rust-light); }
+  .icon-moss { background: var(--moss-light); }
+  .icon-gold { background: var(--gold-light); }
+
+  .card-info { flex: 1; min-width: 0; }
+  .card-skill { font-weight: 500; font-size: 0.9rem; color: var(--ink); }
+  .card-person { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+  .card-tag {
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.6rem;
+    border-radius: 2px;
+  }
+
+  .tag-offer { background: var(--moss-light); color: var(--moss); }
+  .tag-want { background: var(--rust-light); color: var(--rust); }
+
+  .swap-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 1.5rem;
+    margin: 0 auto;
+  }
+
+  /* ── SECTION SHARED ── */
+  section { position: relative; z-index: 1; }
+
+  .section-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    color: var(--ink);
+  }
+
+  /* ── HOW IT WORKS ── */
+  .how-it-works {
+    padding: 7rem 5rem;
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .how-it-works .section-label { color: rgba(245,240,232,0.5); }
+  .how-it-works h2 { color: var(--paper); margin-bottom: 4rem; max-width: 480px; }
+  .how-it-works h2 em { font-style: italic; color: var(--rust-light); }
+
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3rem;
+    counter-reset: steps;
+  }
+
+  .step {
+    counter-increment: steps;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(245,240,232,0.15);
+  }
+
+  .step::before {
+    content: "0" counter(steps);
+    font-family: 'Playfair Display', serif;
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: rgba(245,240,232,0.1);
+    display: block;
+    line-height: 1;
+    margin-bottom: 1rem;
+  }
+
+  .step h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--paper);
+    margin-bottom: 0.75rem;
+  }
+
+  .step p {
+    font-size: 0.9rem;
+    color: rgba(245,240,232,0.6);
+    line-height: 1.8;
+  }
+
+  /* ── BROWSE SKILLS ── */
+  .browse-section {
+    padding: 7rem 5rem;
+    background: var(--paper);
+  }
+
+  .browse-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 3rem;
+  }
+
+  .category-filters {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2.5rem;
+  }
+
+  .filter-btn {
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .filter-btn:hover, .filter-btn.active {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  .skill-card {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.5rem;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    cursor: pointer;
+  }
+
+  .skill-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(26,20,16,0.1);
+    border-color: rgba(26,20,16,0.3);
+  }
+
+  .skill-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .skill-emoji {
+    width: 48px;
+    height: 48px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: var(--cream);
+  }
+
+  .skill-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+  .skill-tag {
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.55rem;
+    border-radius: 2px;
+  }
+
+  .skill-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 0.4rem;
+  }
+
+  .skill-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.6; margin-bottom: 1rem; }
+
+  .skill-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--ink);
+  }
+
+  .avatar-name { font-size: 0.8rem; font-weight: 500; color: var(--ink); }
+  .avatar-sub { font-size: 0.72rem; color: var(--muted); }
+
+  .wants-label {
+    margin-left: auto;
+    font-size: 0.72rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .wants-skill {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--rust);
+  }
+
+  /* ── FEATURED EXCHANGE ── */
+  .featured-section {
+    padding: 7rem 5rem;
+    background: var(--cream);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: center;
+  }
+
+  .featured-section h2 { margin-bottom: 1rem; }
+  .featured-section h2 em { font-style: italic; color: var(--rust); }
+
+  .featured-body {
+    font-size: 1rem;
+    color: var(--muted);
+    line-height: 1.8;
+    margin-bottom: 2rem;
+  }
+
+  .exchange-showcase {
+    position: relative;
+  }
+
+  .exchange-card-big {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2rem;
+  }
+
+  .exchange-profiles {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .profile-block { text-align: center; flex: 1; }
+
+  .profile-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    margin: 0 auto 0.75rem;
+    font-size: 1.2rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink);
+  }
+
+  .profile-name { font-weight: 500; font-size: 0.9rem; color: var(--ink); }
+  .profile-loc { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+  .exchange-arrow-big {
+    text-align: center;
+    font-size: 1.5rem;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+  }
+
+  .exchange-arrow-big span {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+  }
+
+  .skill-exchange-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .skill-pill {
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    font-size: 0.82rem;
+  }
+
+  .pill-offer { background: var(--moss-light); }
+  .pill-offer .pill-label { color: var(--moss); font-size: 0.65rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 4px; }
+  .pill-offer .pill-skill { color: var(--moss); font-weight: 500; }
+
+  .pill-want { background: var(--rust-light); }
+  .pill-want .pill-label { color: var(--rust); font-size: 0.65rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 4px; }
+  .pill-want .pill-skill { color: var(--rust); font-weight: 500; }
+
+  .exchange-quote {
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+    border-left: 3px solid var(--gold);
+    background: var(--gold-light);
+    border-radius: 0 4px 4px 0;
+    font-size: 0.85rem;
+    color: var(--ink);
+    font-style: italic;
+    line-height: 1.7;
+  }
+
+  /* ── CTA SECTION ── */
+  .cta-section {
+    padding: 8rem 5rem;
+    background: var(--ink);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(196,80,26,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .cta-section h2 {
+    color: var(--paper);
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    margin-bottom: 1.25rem;
+    position: relative;
+  }
+
+  .cta-section h2 em { font-style: italic; color: var(--rust-light); }
+
+  .cta-section p {
+    color: rgba(245,240,232,0.55);
+    font-size: 1rem;
+    max-width: 480px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.8;
+    position: relative;
+  }
+
+  .cta-section .btn-primary {
+    background: var(--rust);
+    font-size: 1rem;
+    padding: 1rem 2.5rem;
+    position: relative;
+  }
+
+  .cta-section .btn-primary:hover { background: #a33e10; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--ink);
+    border-top: 1px solid rgba(245,240,232,0.08);
+    padding: 3rem 5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  footer .logo { color: var(--paper); }
+
+  .footer-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .footer-links a {
+    font-size: 0.8rem;
+    color: rgba(245,240,232,0.4);
+    text-decoration: none;
+    transition: color 0.2s;
+    letter-spacing: 0.03em;
+  }
+
+  .footer-links a:hover { color: var(--paper); }
+
+  .footer-copy {
+    font-size: 0.75rem;
+    color: rgba(245,240,232,0.25);
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; }
+    .hero-right { display: none; }
+    .hero-left { padding: 5rem 2rem 3rem; }
+    .how-it-works { padding: 5rem 2rem; }
+    .steps-grid { grid-template-columns: 1fr; gap: 2rem; }
+    .browse-section { padding: 5rem 2rem; }
+    .skills-grid { grid-template-columns: 1fr 1fr; }
+    .featured-section { grid-template-columns: 1fr; padding: 5rem 2rem; }
+    .cta-section { padding: 6rem 2rem; }
+    footer { flex-direction: column; gap: 2rem; padding: 2.5rem 2rem; text-align: center; }
+    .footer-links { justify-content: center; }
+  }
+
+  @media (max-width: 600px) {
+    nav ul { display: none; }
+    .skills-grid { grid-template-columns: 1fr; }
+    .browse-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  }
+
+  /* ── PAGE SYSTEM ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── PROFILE PAGE ── */
+  .profile-page {
+    min-height: 100vh;
+    padding-top: 80px;
+    background: var(--paper);
+  }
+
+  .profile-banner {
+    height: 200px;
+    background: linear-gradient(135deg, var(--ink) 0%, #3a2a1a 100%);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .profile-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='30' cy='30' r='20' fill='none' stroke='rgba(255,255,255,0.04)' stroke-width='1'/%3E%3C/svg%3E");
+  }
+
+  .profile-content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 2rem 4rem;
+  }
+
+  .profile-header-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 1.5rem;
+    margin-top: -48px;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .profile-big-avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    border: 4px solid var(--paper);
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--ink);
+  }
+
+  .profile-header-info { flex: 1; padding-bottom: 0.5rem; }
+
+  .profile-display-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+
+  .profile-meta {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 0.25rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .profile-meta span::before { content: '· '; }
+  .profile-meta span:first-child::before { content: ''; }
+
+  .profile-actions { display: flex; gap: 0.75rem; margin-left: auto; padding-bottom: 0.5rem; }
+
+  .btn-edit {
+    padding: 0.55rem 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .btn-edit:hover { background: var(--cream); border-color: rgba(26,20,16,0.3); }
+
+  .btn-match {
+    padding: 0.55rem 1.25rem;
+    border: none;
+    border-radius: 2px;
+    background: var(--rust);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-match:hover { background: #a33e10; }
+
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .profile-section {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .profile-section-title {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .edit-link {
+    font-size: 0.75rem;
+    color: var(--rust);
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+
+  .bio-text {
+    font-size: 0.92rem;
+    color: var(--ink);
+    line-height: 1.8;
+  }
+
+  .bio-placeholder { color: var(--muted); font-style: italic; }
+
+  .skill-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+  .skill-chip {
+    padding: 0.35rem 0.9rem;
+    border-radius: 100px;
+    font-size: 0.8rem;
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .chip-offer { background: var(--moss-light); color: var(--moss); border: 1px solid rgba(61,90,62,0.2); }
+  .chip-want { background: var(--rust-light); color: var(--rust); border: 1px solid rgba(196,80,26,0.2); }
+
+  .chip-remove {
+    cursor: pointer;
+    font-size: 0.7rem;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    background: none;
+    border: none;
+    color: inherit;
+    padding: 0;
+    line-height: 1;
+  }
+  .chip-remove:hover { opacity: 1; }
+
+  .add-skill-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .add-skill-row input {
+    flex: 1;
+    padding: 0.45rem 0.75rem;
+    border: 1px dashed var(--border);
+    border-radius: 2px;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    color: var(--ink);
+    outline: none;
+  }
+  .add-skill-row input:focus { border-color: var(--rust); border-style: solid; }
+
+  .add-skill-row button {
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    color: var(--ink);
+  }
+  .add-skill-row button:hover { background: var(--ink); color: var(--paper); }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .stat-box {
+    background: var(--cream);
+    border-radius: 4px;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .stat-box .num {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--ink);
+    display: block;
+  }
+
+  .stat-box .lbl {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+
+  .avail-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .avail-tag {
+    padding: 0.25rem 0.7rem;
+    background: var(--gold-light);
+    color: var(--gold);
+    border-radius: 2px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  /* ── EDIT PROFILE MODAL ── */
+  .edit-modal {
+    max-width: 540px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .edit-modal textarea {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: var(--paper);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    color: var(--ink);
+    outline: none;
+    resize: vertical;
+    min-height: 90px;
+    line-height: 1.6;
+  }
+  .edit-modal textarea:focus { border-color: var(--rust); box-shadow: 0 0 0 3px rgba(196,80,26,0.1); }
+
+  .avail-checks { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .avail-check { display: none; }
+  .avail-label {
+    padding: 0.35rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .avail-check:checked + .avail-label {
+    background: var(--gold-light);
+    color: var(--gold);
+    border-color: rgba(184,134,11,0.3);
+  }
+
+  /* ── MATCHING PAGE ── */
+  .matching-page {
+    min-height: 100vh;
+    padding-top: 80px;
+    background: var(--paper);
+  }
+
+  .matching-hero {
+    background: var(--ink);
+    padding: 4rem 5rem 3rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .matching-hero::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: rgba(196,80,26,0.08);
+    pointer-events: none;
+  }
+
+  .matching-hero .section-label { color: rgba(245,240,232,0.4); }
+
+  .matching-hero h2 {
+    color: var(--paper);
+    margin-bottom: 0.75rem;
+  }
+
+  .matching-hero h2 em { font-style: italic; color: var(--rust-light); }
+
+  .matching-hero p {
+    color: rgba(245,240,232,0.55);
+    font-size: 0.95rem;
+    max-width: 520px;
+    line-height: 1.8;
+  }
+
+  .match-controls {
+    padding: 2rem 5rem;
+    background: var(--cream);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .match-controls label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-right: 0.25rem;
+  }
+
+  .match-controls select {
+    padding: 0.5rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: var(--paper);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    color: var(--ink);
+    outline: none;
+    cursor: pointer;
+  }
+
+  .match-score-legend {
+    margin-left: auto;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 4px;
+  }
+
+  .matches-container {
+    padding: 3rem 5rem;
+  }
+
+  .matches-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  .match-card {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .match-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(26,20,16,0.1); }
+
+  .match-score-bar {
+    height: 4px;
+    background: var(--cream);
+  }
+
+  .match-score-fill {
+    height: 100%;
+    border-radius: 0;
+    transition: width 0.8s ease;
+  }
+
+  .match-card-body { padding: 1.25rem; }
+
+  .match-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .match-avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    font-size: 1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--ink);
+  }
+
+  .match-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .match-location { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+  .match-score-badge {
+    margin-left: auto;
+    padding: 0.25rem 0.65rem;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .score-high { background: var(--moss-light); color: var(--moss); }
+  .score-med { background: var(--gold-light); color: var(--gold); }
+  .score-low { background: var(--rust-light); color: var(--rust); }
+
+  .match-skills { margin-bottom: 1rem; }
+
+  .match-skill-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.82rem;
+  }
+
+  .match-skill-row .arrow { color: var(--muted); flex-shrink: 0; }
+
+  .match-reason {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.6;
+    padding: 0.75rem;
+    background: var(--cream);
+    border-radius: 3px;
+    margin-bottom: 1rem;
+    font-style: italic;
+  }
+
+  .match-card-footer {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid var(--border);
+    background: var(--paper);
+  }
+
+  .btn-connect {
+    flex: 1;
+    padding: 0.55rem;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-connect:hover { background: var(--rust); }
+
+  .btn-save {
+    padding: 0.55rem 0.85rem;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-save:hover { background: var(--cream); color: var(--ink); }
+  .btn-save.saved { background: var(--gold-light); color: var(--gold); border-color: rgba(184,134,11,0.3); }
+
+  .no-matches {
+    text-align: center;
+    padding: 5rem 2rem;
+    color: var(--muted);
+  }
+  .no-matches p { font-size: 0.95rem; line-height: 1.8; }
+
+  .match-empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  @media (max-width: 900px) {
+    .profile-grid { grid-template-columns: 1fr; }
+    .matching-hero { padding: 3rem 2rem 2.5rem; }
+    .match-controls { padding: 1.5rem 2rem; }
+    .matches-container { padding: 2rem; }
+    .matches-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 600px) {
+    .matches-grid { grid-template-columns: 1fr; }
+    .profile-header-row { flex-direction: column; align-items: flex-start; }
+    .profile-actions { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="logo" onclick="showPage('home'); return false;">Skill<span>Swap</span></a>
+  <ul id="navLinks">
+    <li><a href="#browse" onclick="showPage('home')">Browse</a></li>
+    <li><a href="#how" onclick="showPage('home')">How it works</a></li>
+    <li><a href="#stories" onclick="showPage('home')">Stories</a></li>
+    <li><a href="#" class="nav-login" onclick="openModal('login'); return false;">Log in</a></li>
+    <li><a href="#" class="nav-cta" onclick="openModal('register'); return false;">Sign up free</a></li>
+  </ul>
+  <div class="nav-user" id="navUser">
+    <div class="nav-avatar" id="navAvatar" onclick="showPage('profile')" title="View profile" style="cursor:pointer;">?</div>
+    <span class="nav-username" id="navUsername" onclick="showPage('profile')" style="cursor:pointer;"></span>
+    <a href="#" style="font-size:0.82rem;color:var(--muted);text-decoration:none;margin:0 0.25rem;" onclick="showPage('matches'); return false;">My Matches</a>
+    <button class="nav-signout" onclick="signOut()">Sign out</button>
+  </div>
+</nav>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modalBox">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-logo">Skill<span>Swap</span></div>
+
+    <!-- TABS -->
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tabLogin" onclick="switchTab('login')">Log in</button>
+      <button class="modal-tab" id="tabRegister" onclick="switchTab('register')">Create account</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="loginForm">
+      <div class="btn-google" onclick="socialAuth()">
+        <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </div>
+      <div class="form-divider">or</div>
+      <div class="form-group">
+        <label>Email address</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com">
+        <div class="input-hint" id="loginEmailHint">Please enter a valid email.</div>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="••••••••">
+        <div class="input-hint" id="loginPasswordHint">Password must be at least 6 characters.</div>
+      </div>
+      <div style="text-align:right; margin: -0.25rem 0 1rem;">
+        <a href="#" style="font-size:0.78rem; color:var(--rust); text-decoration:none;">Forgot password?</a>
+      </div>
+      <button class="btn-submit" onclick="handleLogin()">Log in to SkillSwap</button>
+      <div class="modal-switch">Don't have an account? <a onclick="switchTab('register')">Sign up free</a></div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="registerForm" style="display:none;">
+      <div class="btn-google" onclick="socialAuth()">
+        <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </div>
+      <div class="form-divider">or</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>First name</label>
+          <input type="text" id="regFirst" placeholder="Priya">
+          <div class="input-hint" id="regFirstHint">Required.</div>
+        </div>
+        <div class="form-group">
+          <label>Last name</label>
+          <input type="text" id="regLast" placeholder="Sharma">
+          <div class="input-hint" id="regLastHint">Required.</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email address</label>
+        <input type="email" id="regEmail" placeholder="you@example.com">
+        <div class="input-hint" id="regEmailHint">Please enter a valid email.</div>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="regPassword" placeholder="At least 6 characters">
+        <div class="input-hint" id="regPasswordHint">Password must be at least 6 characters.</div>
+      </div>
+      <div class="form-group">
+        <label>I want to</label>
+        <select id="regGoal">
+          <option value="">Select your primary goal…</option>
+          <option value="offer">Offer my skills to others</option>
+          <option value="learn">Find skills to learn</option>
+          <option value="both">Both — offer and learn</option>
+        </select>
+        <div class="input-hint" id="regGoalHint">Please select a goal.</div>
+      </div>
+      <button class="btn-submit" onclick="handleRegister()">Create my account</button>
+      <div class="modal-switch">Already have an account? <a onclick="switchTab('login')">Log in</a></div>
+    </div>
+
+    <!-- SUCCESS STATE -->
+    <div class="success-state" id="successState">
+      <div class="success-icon">✓</div>
+      <h3 id="successTitle">Welcome back!</h3>
+      <p id="successMsg">You're now signed in. Start browsing skill exchanges.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ HOME PAGE ═══════════════ -->
+<div id="page-home" class="page active">
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow">No money. No hierarchy. Just skills.</div>
+    <h1>Trade what you know, <em>learn what you don't.</em></h1>
+    <p class="hero-desc">SkillSwap connects people who want to exchange knowledge and time. Teach guitar, learn Python. Share cooking, gain design. No money changes hands — only expertise.</p>
+    <div class="hero-actions">
+      <a href="#browse" class="btn-primary">Browse skills</a>
+      <a href="#how" class="btn-secondary">See how it works</a>
+    </div>
+    <div class="hero-stats">
+      <div>
+        <span class="stat-num">4,200+</span>
+        <div class="stat-label">Active members</div>
+      </div>
+      <div>
+        <span class="stat-num">180+</span>
+        <div class="stat-label">Skill categories</div>
+      </div>
+      <div>
+        <span class="stat-num">9,600+</span>
+        <div class="stat-label">Swaps completed</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="swap-visual">
+      <div class="swap-cards-container">
+        <div class="swap-card">
+          <div class="card-icon icon-moss">🎸</div>
+          <div class="card-info">
+            <div class="card-skill">Guitar lessons</div>
+            <div class="card-person">Priya M. · Intermediate · 3h/week</div>
+          </div>
+          <span class="card-tag tag-offer">Offers</span>
+        </div>
+        <div class="swap-arrow">⇅</div>
+        <div class="swap-card">
+          <div class="card-icon icon-rust">💻</div>
+          <div class="card-info">
+            <div class="card-skill">Python / Data Science</div>
+            <div class="card-person">Ayaan K. · Beginner-friendly · 2h/week</div>
+          </div>
+          <span class="card-tag tag-want">Wants</span>
+        </div>
+        <div style="text-align:center; padding: 0.5rem 0;">
+          <span style="font-size:0.75rem; color:var(--muted); letter-spacing:0.05em;">↕ MATCHED — 12 sessions completed</span>
+        </div>
+        <div class="swap-card">
+          <div class="card-icon icon-gold">🍜</div>
+          <div class="card-info">
+            <div class="card-skill">Thai cooking</div>
+            <div class="card-person">Meera S. · Home chef · Weekend</div>
+          </div>
+          <span class="card-tag tag-offer">Offers</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-it-works" id="how">
+  <div class="section-label">The process</div>
+  <h2>Simple, fair, and <em>human.</em></h2>
+  <div class="steps-grid">
+    <div class="step">
+      <h3>List your skills</h3>
+      <p>Tell us what you're good at and what you'd love to learn. Be specific — "Cantonese cooking" beats "cooking." The more precise, the better your matches.</p>
+    </div>
+    <div class="step">
+      <h3>Find your match</h3>
+      <p>Our matching engine finds people whose offerings align with your wishes and vice versa. Browse by category, location, or availability.</p>
+    </div>
+    <div class="step">
+      <h3>Swap and grow</h3>
+      <p>Connect, agree on a schedule, and start exchanging. Meet in person, over video, or share resources — whatever works for both of you.</p>
+    </div>
+  </div>
+</section>
+
+<!-- BROWSE SKILLS -->
+<section class="browse-section" id="browse">
+  <div class="browse-header">
+    <div>
+      <div class="section-label">Open exchanges</div>
+      <h2>Browse what's on offer</h2>
+    </div>
+    <a href="#" class="btn-secondary" style="white-space:nowrap;">View all 840+</a>
+  </div>
+
+  <div class="category-filters">
+    <button class="filter-btn active" onclick="filterSkills(this,'all')">All</button>
+    <button class="filter-btn" onclick="filterSkills(this,'tech')">Tech & Code</button>
+    <button class="filter-btn" onclick="filterSkills(this,'music')">Music</button>
+    <button class="filter-btn" onclick="filterSkills(this,'language')">Language</button>
+    <button class="filter-btn" onclick="filterSkills(this,'culinary')">Culinary</button>
+    <button class="filter-btn" onclick="filterSkills(this,'design')">Design</button>
+    <button class="filter-btn" onclick="filterSkills(this,'fitness')">Fitness</button>
+  </div>
+
+  <div class="skills-grid" id="skillsGrid">
+
+    <div class="skill-card" data-category="tech">
+      <div class="skill-card-top">
+        <div class="skill-emoji">🐍</div>
+        <div class="skill-tags">
+          <span class="skill-tag tag-offer">Offers</span>
+        </div>
+      </div>
+      <div class="skill-name">Python for Beginners</div>
+      <div class="skill-desc">Fundamentals to intermediate — covering data types, loops, functions, and intro to pandas. Structured 6-session plan.</div>
+      <div class="skill-footer">
+        <div class="avatar" style="background:#e8d4f0;">SK</div>
+        <div>
+          <div class="avatar-name">Saket K.</div>
+          <div class="avatar-sub">Software engineer · Delhi</div>
+        </div>
+        <div style="margin-left:auto; text-align:right;">
+          <div class="wants-label">Wants</div>
+          <div class="wants-skill">Hindi lessons</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="skill-card" data-category="music">
+      <div class="skill-card-top">
+        <div class="skill-emoji">🎹</div>
+        <div class="skill-tags">
+          <span class="skill-tag tag-offer">Offers</span>
+        </div>
+      </div>
+      <div class="skill-name">Piano — Classical & Jazz</div>
+      <div class="skill-desc">From reading sheet music to improvisation. 8 years of teaching experience. Beginner to intermediate welcome.</div>
+      <div class="skill-footer">
+        <div class="avatar" style="background:#d4e0c4;">RP</div>
+        <div>
+          <div class="avatar-name">Radhika P.</div>
+          <div class="avatar-sub">Music teacher · Bangalore</div>
+        </div>
+        <div style="margin-left:auto; text-align:right;">
+          <div class="wants-label">Wants</div>
+          <div class="wants-skill">Graphic design</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="skill-card" data-category="language">
+      <div class="skill-card-top">
+        <div class="skill-emoji">🇫🇷</div>
+        <div class="skill-tags">
+          <span class="skill-tag tag-offer">Offers</span>
+        </div>
+      </div>
+      <div class="skill-name">French Conversation</div>
+      <div class="skill-desc">Native speaker offering conversational practice. Focus on real-world dialogue, not textbook French. All levels OK.</div>
+      <div class="skill-footer">
+        <div class="avatar" style="background:#fde8cc;">AM</div>
+        <div>
+          <div class="avatar-name">Aditi M.</div>
+          <div class="avatar-sub">Translator · Mumbai</div>
+        </div>
+        <div style="margin-left:auto; text-align:right;">
+          <div class="wants-label">Wants</div>
+          <div class="wants-skill">Yoga teaching</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="skill-card" data-category="culinary">
+      <div class="skill-card-top">
+        <div class="skill-emoji">🍱</div>
+        <div class="skill-tags">
+          <span class="skill-tag tag-offer">Offers</span>
+        </div>
+      </div>
+      <div class="skill-name">Japanese Home Cooking</div>
+      <div class="skill-desc">Onigiri, ramen, teriyaki, dashi — authentic Japanese recipes taught in your own kitchen or online. Groceries list provided.</div>
+      <div class="skill-footer">
+        <div class="avatar" style="background:#c4d4e8;">VN</div>
+        <div>
+          <div class="avatar-name">Vikram N.</div>
+          <div class="avatar-sub">Chef · Hyderabad</div>
+        </div>
+        <div style="margin-left:auto; text-align:right;">
+          <div class="wants-label">Wants</div>
+          <div class="wants-skill">Photography</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="skill-card" data-category="design">
+      <div class="skill-card-top">
+        <div class="skill-emoji">✏️</div>
+        <div class="skill-tags">
+          <span class="skill-tag tag-offer">Offers</span>
+        </div>
+      </div>
+      <div class="skill-name">Figma & UI Design</div>
+      <div class="skill-desc">Hands-on product design — components, design systems, prototyping, and user research basics. Portfolio-building focus.</div>
+      <div class="skill-footer">
+        <div class="avatar" style="background:#f0d4c4;">NB</div>
+        <div>
+          <div class="avatar-name">Neha B.</div>
+          <div class="avatar-sub">Product designer · Pune</div>
+        </div>
+        <div style="margin-left:auto; text-align:right;">
+          <div class="wants-label">Wants</div>
+          <div class="wants-skill">Salsa dancing</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="skill-card" data-category="fitness">
+      <div class="skill-card-top">
+        <div class="skill-emoji">🧘</div>
+        <div class="skill-tags">
+          <span class="skill-tag tag-offer">Offers</span>
+        </div>
+      </div>
+      <div class="skill-name">Ashtanga Yoga</div>
+      <div class="skill-desc">200hr certified instructor. Morning sessions, breathwork, pranayama, and philosophy included. In-person in Delhi or Zoom.</div>
+      <div class="skill-footer">
+        <div class="avatar" style="background:#d4e8d0;">PS</div>
+        <div>
+          <div class="avatar-name">Preeti S.</div>
+          <div class="avatar-sub">Yoga instructor · Delhi</div>
+        </div>
+        <div style="margin-left:auto; text-align:right;">
+          <div class="wants-label">Wants</div>
+          <div class="wants-skill">Web development</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- FEATURED EXCHANGE -->
+<section class="featured-section" id="stories">
+  <div>
+    <div class="section-label">A real swap</div>
+    <h2>Skills bridging <em>worlds apart</em></h2>
+    <p class="featured-body">Meera in Chennai and Arjun in Berlin discovered each other through SkillSwap. She's a master of Carnatic music; he's a full-stack developer who always wanted to learn an Indian classical form. Eighteen sessions later, both have something they never could have bought.</p>
+    <a href="#" class="btn-primary">Read more stories</a>
+  </div>
+
+  <div class="exchange-showcase">
+    <div class="exchange-card-big">
+      <div class="exchange-profiles">
+        <div class="profile-block">
+          <div class="profile-avatar" style="background:#f5e0d0;">MR</div>
+          <div class="profile-name">Meera R.</div>
+          <div class="profile-loc">Chennai, India</div>
+        </div>
+        <div class="exchange-arrow-big">
+          ⇆
+          <span>swap</span>
+        </div>
+        <div class="profile-block">
+          <div class="profile-avatar" style="background:#d4e0f0;">AV</div>
+          <div class="profile-name">Arjun V.</div>
+          <div class="profile-loc">Berlin, Germany</div>
+        </div>
+      </div>
+      <div class="skill-exchange-row">
+        <div class="skill-pill pill-offer">
+          <span class="pill-label">Meera offers</span>
+          <span class="pill-skill">🎵 Carnatic vocal music</span>
+        </div>
+        <div class="skill-pill pill-want">
+          <span class="pill-label">Arjun offers</span>
+          <span class="pill-skill">💻 React development</span>
+        </div>
+      </div>
+      <div class="exchange-quote">
+        "I never thought I'd learn to code, but Arjun made it feel as natural as learning a new raga. We've built a small app together now." — Meera
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>Your knowledge has <em>value.</em></h2>
+  <p>Join thousands of people trading what they know for what they want to learn. No fees. No intermediaries. Just genuine human exchange.</p>
+  <a href="#" class="btn-primary" onclick="openModal('register'); return false;">Create your free profile</a>
+</section>
+
+</div><!-- end #page-home -->
+
+
+<!-- ═══════════════ PROFILE PAGE ═══════════════ -->
+<div id="page-profile" class="page profile-page">
+  <div class="profile-banner"></div>
+  <div class="profile-content">
+    <div class="profile-header-row">
+      <div class="profile-big-avatar" id="profileBigAvatar" style="background:#f0d4c4;">?</div>
+      <div class="profile-header-info">
+        <div class="profile-display-name" id="profileDisplayName">—</div>
+        <div class="profile-meta">
+          <span id="profileEmail">—</span>
+          <span id="profileGoalLabel">—</span>
+          <span id="profileLocation">Delhi, India</span>
+        </div>
+      </div>
+      <div class="profile-actions">
+        <button class="btn-edit" onclick="openEditProfile()">Edit profile</button>
+        <button class="btn-match" onclick="showPage('matches')">Find my matches →</button>
+      </div>
+    </div>
+
+    <div class="profile-grid">
+      <div>
+        <!-- BIO -->
+        <div class="profile-section">
+          <div class="profile-section-title">About me <span class="edit-link" onclick="openEditProfile()">Edit</span></div>
+          <div class="bio-text" id="profileBio"><span class="bio-placeholder">No bio yet. Tell the community what you're about.</span></div>
+        </div>
+
+        <!-- SKILLS I OFFER -->
+        <div class="profile-section">
+          <div class="profile-section-title">Skills I can teach</div>
+          <div class="skill-chips" id="offerChips"></div>
+          <div class="add-skill-row">
+            <input type="text" id="newOfferSkill" placeholder="Add a skill you can teach…" onkeydown="if(event.key==='Enter') addSkillChip('offer')">
+            <button onclick="addSkillChip('offer')">+ Add</button>
+          </div>
+        </div>
+
+        <!-- SKILLS I WANT -->
+        <div class="profile-section">
+          <div class="profile-section-title">Skills I want to learn</div>
+          <div class="skill-chips" id="wantChips"></div>
+          <div class="add-skill-row">
+            <input type="text" id="newWantSkill" placeholder="Add a skill you want to learn…" onkeydown="if(event.key==='Enter') addSkillChip('want')">
+            <button onclick="addSkillChip('want')">+ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIDEBAR -->
+      <div>
+        <div class="profile-section">
+          <div class="profile-section-title">Stats</div>
+          <div class="stats-grid">
+            <div class="stat-box"><span class="num" id="statMatches">0</span><div class="lbl">Matches</div></div>
+            <div class="stat-box"><span class="num" id="statSwaps">0</span><div class="lbl">Swaps done</div></div>
+            <div class="stat-box"><span class="num" id="statOffering">0</span><div class="lbl">Teaching</div></div>
+            <div class="stat-box"><span class="num" id="statWanting">0</span><div class="lbl">Learning</div></div>
+          </div>
+        </div>
+
+        <div class="profile-section">
+          <div class="profile-section-title">Availability <span class="edit-link" onclick="openEditProfile()">Edit</span></div>
+          <div class="avail-tags" id="profileAvailTags">
+            <span style="font-size:0.82rem;color:var(--muted);font-style:italic;">Not set yet</span>
+          </div>
+        </div>
+
+        <div class="profile-section">
+          <div class="profile-section-title">Session format</div>
+          <div class="avail-tags" id="profileFormatTags">
+            <span class="avail-tag">Online (Zoom/Meet)</span>
+          </div>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <button class="btn-match" style="width:100%;padding:0.85rem;" onclick="showPage('matches')">🔍 Find skill matches</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════ MATCHING PAGE ═══════════════ -->
+<div id="page-matches" class="page matching-page">
+  <div class="matching-hero">
+    <div class="section-label">Smart matching</div>
+    <h2>Your <em>best matches</em></h2>
+    <p>Our algorithm scores compatibility based on what you offer vs. what others want, and vice versa — plus availability and location.</p>
+  </div>
+
+  <div class="match-controls">
+    <label>Sort by</label>
+    <select id="matchSort" onchange="renderMatches()">
+      <option value="score">Match score</option>
+      <option value="name">Name</option>
+      <option value="swaps">Most swaps</option>
+    </select>
+    <label style="margin-left:1rem;">Min score</label>
+    <select id="matchFilter" onchange="renderMatches()">
+      <option value="0">All</option>
+      <option value="60">60%+</option>
+      <option value="75">75%+</option>
+      <option value="90">90%+</option>
+    </select>
+    <div class="match-score-legend">
+      <span><span class="legend-dot" style="background:#3d5a3e;"></span>Great (75%+)</span>
+      <span><span class="legend-dot" style="background:#b8860b;"></span>Good (50–74%)</span>
+      <span><span class="legend-dot" style="background:#c4501a;"></span>Possible (&lt;50%)</span>
+    </div>
+  </div>
+
+  <div class="matches-container">
+    <div class="matches-grid" id="matchesGrid"></div>
+  </div>
+</div>
+
+
+<!-- EDIT PROFILE MODAL -->
+<div class="modal-overlay" id="editProfileOverlay" onclick="handleEditOverlayClick(event)">
+  <div class="modal edit-modal">
+    <button class="modal-close" onclick="closeEditProfile()">✕</button>
+    <div class="modal-logo">Skill<span>Swap</span></div>
+    <h2 style="font-family:'Playfair Display',serif;font-size:1.4rem;margin-bottom:1.5rem;">Edit your profile</h2>
+
+    <div class="form-group">
+      <label>Display name</label>
+      <input type="text" id="editName" placeholder="Your full name">
+    </div>
+    <div class="form-group">
+      <label>Location</label>
+      <input type="text" id="editLocation" placeholder="City, Country">
+    </div>
+    <div class="form-group">
+      <label>Bio</label>
+      <textarea id="editBio" placeholder="Tell the community a bit about yourself — your background, passions, and what you hope to exchange…"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Availability</label>
+      <div class="avail-checks">
+        <input type="checkbox" id="av1" class="avail-check" value="Weekday mornings"><label for="av1" class="avail-label">Weekday mornings</label>
+        <input type="checkbox" id="av2" class="avail-check" value="Weekday evenings"><label for="av2" class="avail-label">Weekday evenings</label>
+        <input type="checkbox" id="av3" class="avail-check" value="Weekends"><label for="av3" class="avail-label">Weekends</label>
+        <input type="checkbox" id="av4" class="avail-check" value="Flexible"><label for="av4" class="avail-label">Flexible</label>
+      </div>
+    </div>
+    <button class="btn-submit" onclick="saveEditProfile()">Save changes</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <a href="#" class="logo">Skill<span>Swap</span></a>
+  <ul class="footer-links">
+    <li><a href="#">About</a></li>
+    <li><a href="#">How it works</a></li>
+    <li><a href="#">Trust & Safety</a></li>
+    <li><a href="#">Blog</a></li>
+    <li><a href="#">Contact</a></li>
+  </ul>
+  <div class="footer-copy">© 2026 SkillSwap</div>
+</footer>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBGdoDoDvgluGHGPDIzVkE398uFm_6nUow",
+    authDomain: "skill-swap-18330.firebaseapp.com",
+    projectId: "skill-swap-18330",
+    databaseURL: "https://skill-swap-18330-default-rtdb.firebaseio.com",
+    storageBucket: "skill-swap-18330.firebasestorage.app",
+    messagingSenderId: "333008022174",
+    appId: "1:333008022174:web:9233b9a4d6333472fde98f",
+    measurementId: "G-K3TFEHJ0YK"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  window.auth = auth;
+  window.db = db;
+  window.firebaseFns = {
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    doc, setDoc, getDoc,
+    onAuthStateChanged,
+    signOut
+  };
+   console.log("✅ Firebase Connected", app);
+</script>
+
+<script>
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const pg = document.getElementById('page-' + name);
+    if (pg) { pg.classList.add('active'); window.scrollTo(0,0); }
+    if (name === 'profile') refreshProfileUI();
+    if (name === 'matches') renderMatches();
+  }
+  function filterSkills(btn, category) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.skill-card').forEach(card => {
+      card.style.display = (category === 'all' || card.dataset.category === category) ? 'block' : 'none';
+    });
+  }
+
+  const dynStyle = document.createElement('style');
+  dynStyle.textContent = '@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }';
+  document.head.appendChild(dynStyle);
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.style.opacity = '1'; e.target.style.transform = 'translateY(0)'; }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.skill-card, .step, .exchange-card-big').forEach(el => {
+    el.style.opacity = '0'; el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    observer.observe(el);
+  });
+  function openModal(tab) {
+    document.getElementById('modalOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    switchTab(tab || 'login');
+    hideSuccess();
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+    clearErrors();
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeEditProfile(); } });
+
+  function switchTab(tab) {
+    document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+    document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+    document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+    hideSuccess(); clearErrors();
+  }
+
+  function hideSuccess() {
+    document.getElementById('successState').style.display = 'none';
+    document.getElementById('loginForm').style.display = document.getElementById('tabLogin').classList.contains('active') ? 'block' : 'none';
+    document.getElementById('registerForm').style.display = document.getElementById('tabRegister').classList.contains('active') ? 'block' : 'none';
+  }
+
+  function showError(id, msg) {
+    const el = document.getElementById(id + 'Hint'), input = document.getElementById(id);
+    if (el) { el.textContent = msg || el.textContent; el.classList.add('show'); }
+    if (input) input.classList.add('error');
+  }
+
+  function clearError(id) {
+    const el = document.getElementById(id + 'Hint'), input = document.getElementById(id);
+    if (el) el.classList.remove('show');
+    if (input) input.classList.remove('error');
+  }
+
+  function clearErrors() {
+    ['loginEmail','loginPassword','regFirst','regLast','regEmail','regPassword','regGoal'].forEach(id => clearError(id));
+  }
+
+  function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
+  let currentUser = null;  
+  async function handleLogin() {
+  clearErrors();
+
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+
+  try {
+    const userCred = await firebaseFns.signInWithEmailAndPassword(auth, email, password);
+    const user = userCred.user;
+
+    const docSnap = await firebaseFns.getDoc(firebaseFns.doc(db, "users", user.uid));
+
+    if (docSnap.exists()) {
+      currentUser = docSnap.data();
+      currentUser.uid = user.uid;
+
+      updateNavForUser(currentUser);
+      showPage('profile');
+    }
+
+  } catch (error) {
+    alert("Login failed: " + error.message);
+  }
+}
+
+  async function handleRegister() {
+  clearErrors();
+
+  const first = document.getElementById('regFirst').value.trim();
+  const last = document.getElementById('regLast').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+
+  try {
+    const userCred = await firebaseFns.createUserWithEmailAndPassword(auth, email, password);
+    const user = userCred.user;
+
+    await firebaseFns.setDoc(firebaseFns.doc(db, "users", user.uid), {
+      first,
+      last,
+      email,
+      bio: '',
+      location: '',
+      offersSkills: [],
+      wantsSkills: [],
+      availability: [],
+      swaps: 0
+    });
+
+    alert("✅ Account created!");
+    showPage('profile');
+
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+function socialAuth() {
+  alert("⚠️ Google login not implemented yet");
+}
+
+  function signIn(user, isNew) {
+    currentUser = user;
+    updateNavForUser(user);
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('registerForm').style.display = 'none';
+    const s = document.getElementById('successState');
+    s.style.display = 'block';
+    document.getElementById('successTitle').textContent = isNew ? `Welcome, ${user.first}!` : `Welcome back, ${user.first}!`;
+    document.getElementById('successMsg').textContent = isNew
+      ? 'Your profile is ready. Add your skills and find your first match!'
+      : "You're signed in. Check your profile or find matches now.";
+    setTimeout(() => { closeModal(); if (isNew) showPage('profile'); }, 2200);
+  }
+
+async function signOut() {
+  await firebaseFns.signOut(auth); // 🔥 Firebase logout
+
+  currentUser = null;
+
+  document.getElementById('navUser').classList.remove('visible');
+  document.getElementById('navLinks').style.display = '';
+
+  showPage('home');
+}
+
+  function updateNavForUser(user) {
+    const initials = (user.first[0] + (user.last ? user.last[0] : '')).toUpperCase();
+    document.getElementById('navAvatar').textContent = initials;
+    document.getElementById('navUsername').textContent = user.first;
+    document.getElementById('navUser').classList.add('visible');
+    document.getElementById('navLinks').style.display = 'none';
+  }
+
+  if (currentUser) updateNavForUser(currentUser);
+
+  /* ══════════════════════════════════════
+     PROFILE PAGE
+  ══════════════════════════════════════ */
+  const AVATAR_COLORS = ['#f0d4c4','#d4e0c4','#d4e0f0','#f5e6b0','#e8d4f0','#fde8cc','#c4d4e8'];
+
+  function getAvatarColor(name) {
+    let n = 0; for (let c of name) n += c.charCodeAt(0);
+    return AVATAR_COLORS[n % AVATAR_COLORS.length];
+  }
+
+  function refreshProfileUI() {
+    if (!currentUser) { showPage('home'); openModal('login'); return; }
+    const u = currentUser;
+    const initials = (u.first[0] + (u.last ? u.last[0] : '')).toUpperCase();
+    document.getElementById('profileBigAvatar').textContent = initials;
+    document.getElementById('profileBigAvatar').style.background = getAvatarColor(u.first + u.last);
+    document.getElementById('profileDisplayName').textContent = u.first + ' ' + (u.last || '');
+    document.getElementById('profileEmail').textContent = u.email;
+    document.getElementById('profileGoalLabel').textContent = { offer:'Teaching', learn:'Learning', both:'Teaching & Learning' }[u.goal] || '';
+    document.getElementById('profileLocation').textContent = u.location || 'Location not set';
+    document.getElementById('profileBio').innerHTML = u.bio
+      ? u.bio.replace(/\n/g,'<br>')
+      : '<span class="bio-placeholder">No bio yet. Tell the community what you\'re about.</span>';
+
+    renderChips('offerChips', u.offersSkills || [], 'offer');
+    renderChips('wantChips', u.wantsSkills || [], 'want');
+
+    const avail = u.availability || [];
+    const availEl = document.getElementById('profileAvailTags');
+    availEl.innerHTML = avail.length
+      ? avail.map(a => `<span class="avail-tag">${a}</span>`).join('')
+      : '<span style="font-size:0.82rem;color:var(--muted);font-style:italic;">Not set yet</span>';
+
+    const offers = (u.offersSkills||[]).length;
+    const wants  = (u.wantsSkills||[]).length;
+    const score  = computeMatchesForUser(u);
+    document.getElementById('statMatches').textContent = score.length;
+    document.getElementById('statSwaps').textContent   = u.swaps || 0;
+    document.getElementById('statOffering').textContent = offers;
+    document.getElementById('statWanting').textContent  = wants;
+  }
+
+  function renderChips(containerId, skills, type) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = (skills.length === 0)
+      ? `<span style="font-size:0.82rem;color:var(--muted);font-style:italic;">None added yet</span>`
+      : skills.map((s,i) => `
+          <span class="skill-chip chip-${type}">
+            ${s}
+            <button class="chip-remove" onclick="removeSkill('${type}',${i})" title="Remove">✕</button>
+          </span>`).join('');
+  }
+
+  function addSkillChip(type) {
+    if (!currentUser) return;
+    const inputId = type === 'offer' ? 'newOfferSkill' : 'newWantSkill';
+    const input = document.getElementById(inputId);
+    const val = input.value.trim();
+    if (!val) return;
+    const key = type === 'offer' ? 'offersSkills' : 'wantsSkills';
+    if (!currentUser[key]) currentUser[key] = [];
+    if (currentUser[key].includes(val)) { input.value = ''; return; }
+    currentUser[key].push(val);
+    persistUser();
+    input.value = '';
+    renderChips(type === 'offer' ? 'offerChips' : 'wantChips', currentUser[key], type);
+    document.getElementById('statOffering').textContent = (currentUser.offersSkills||[]).length;
+    document.getElementById('statWanting').textContent  = (currentUser.wantsSkills||[]).length;
+  }
+
+  function removeSkill(type, index) {
+    if (!currentUser) return;
+    const key = type === 'offer' ? 'offersSkills' : 'wantsSkills';
+    currentUser[key].splice(index, 1);
+    persistUser();
+    renderChips(type === 'offer' ? 'offerChips' : 'wantChips', currentUser[key], type);
+  }
+
+ async function persistUser() {
+  if (!currentUser || !currentUser.uid) return;
+
+  await firebaseFns.setDoc(
+    firebaseFns.doc(db, "users", currentUser.uid),
+    currentUser
+  );
+}
+
+  /* ── EDIT PROFILE MODAL ── */
+  function openEditProfile() {
+    if (!currentUser) return;
+    document.getElementById('editName').value = (currentUser.first + ' ' + (currentUser.last||'')).trim();
+    document.getElementById('editLocation').value = currentUser.location || '';
+    document.getElementById('editBio').value = currentUser.bio || '';
+    const avail = currentUser.availability || [];
+    ['av1','av2','av3','av4'].forEach(id => {
+      const cb = document.getElementById(id);
+      cb.checked = avail.includes(cb.value);
+    });
+    document.getElementById('editProfileOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeEditProfile() {
+    document.getElementById('editProfileOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function handleEditOverlayClick(e) {
+    if (e.target === document.getElementById('editProfileOverlay')) closeEditProfile();
+  }
+
+  function saveEditProfile() {
+    const name = document.getElementById('editName').value.trim().split(' ');
+    currentUser.first = name[0] || currentUser.first;
+    currentUser.last  = name.slice(1).join(' ') || currentUser.last || '';
+    currentUser.location = document.getElementById('editLocation').value.trim();
+    currentUser.bio  = document.getElementById('editBio').value.trim();
+    currentUser.availability = ['av1','av2','av3','av4']
+      .filter(id => document.getElementById(id).checked)
+      .map(id => document.getElementById(id).value);
+    persistUser();
+    updateNavForUser(currentUser);
+    closeEditProfile();
+    refreshProfileUI();
+  }
+
+  /* ══════════════════════════════════════
+     MATCHING ALGORITHM
+  ══════════════════════════════════════ */
+  function normalize(str) { return str.toLowerCase().replace(/[^a-z0-9 ]/g,'').trim(); }
+
+  function skillOverlap(aSkills, bSkills) {
+    if (!aSkills.length || !bSkills.length) return 0;
+    const aNorm = aSkills.map(normalize);
+    const bNorm = bSkills.map(normalize);
+    let hits = 0;
+    aNorm.forEach(a => {
+      if (bNorm.some(b => b.includes(a) || a.includes(b) || levenshtein(a,b) <= 2)) hits++;
+    });
+    return hits;
+  }
+
+  function levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    const dp = Array.from({length: m+1}, (_,i) => Array.from({length: n+1}, (_,j) => i===0?j:j===0?i:0));
+    for (let i=1;i<=m;i++) for (let j=1;j<=n;j++)
+      dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    return dp[m][n];
+  }
+
+  function computeScore(me, other) {
+    const myOffers  = me.offersSkills || [];
+    const myWants   = me.wantsSkills  || [];
+    const theirOffers = other.offersSkills || [];
+    const theirWants  = other.wantsSkills  || [];
+
+    // How much they can teach me (my wants ∩ their offers)
+    const theyTeachMe = skillOverlap(myWants, theirOffers);
+    // How much I can teach them (my offers ∩ their wants)
+    const iTeachThem  = skillOverlap(myOffers, theirWants);
+
+    const maxPossible = Math.max(myWants.length, myOffers.length, 1);
+    const skillScore  = ((theyTeachMe + iTeachThem) / (maxPossible * 2)) * 100;
+
+    // Availability bonus
+    const myAvail    = me.availability    || [];
+    const theirAvail = other.availability || [];
+    const availHits  = myAvail.filter(a => theirAvail.includes(a)).length;
+    const availBonus = myAvail.length ? (availHits / myAvail.length) * 15 : 5;
+
+    // Location bonus
+    const sameCity = me.location && other.location &&
+      normalize(me.location.split(',')[0]) === normalize(other.location.split(',')[0]);
+    const locBonus = sameCity ? 10 : 0;
+
+    const raw = Math.min(100, skillScore + availBonus + locBonus);
+    return { score: Math.round(raw), theyTeachMe, iTeachThem };
+  }
+
+  function computeMatchesForUser(me) {
+    return users
+      .filter(u => u.email !== me.email)
+      .map(other => ({ user: other, ...computeScore(me, other) }))
+      .filter(m => m.score > 0)
+      .sort((a,b) => b.score - a.score);
+  }
+
+  function renderMatches() {
+    if (!currentUser) { showPage('home'); openModal('login'); return; }
+
+    const sort   = document.getElementById('matchSort')?.value   || 'score';
+    const minPct = parseInt(document.getElementById('matchFilter')?.value || '0');
+
+    let matches = computeMatchesForUser(currentUser).filter(m => m.score >= minPct);
+
+    if (sort === 'name') matches.sort((a,b) => a.user.first.localeCompare(b.user.first));
+    if (sort === 'swaps') matches.sort((a,b) => (b.user.swaps||0) - (a.user.swaps||0));
+
+    const grid = document.getElementById('matchesGrid');
+
+    if (matches.length === 0) {
+      grid.innerHTML = `<div class="no-matches" style="grid-column:1/-1;">
+        <div class="match-empty-icon">🔍</div>
+        <h3 style="font-family:'Playfair Display',serif;margin-bottom:0.5rem;">No matches found</h3>
+        <p>Add more skills to your profile to unlock better matches.<br>
+        <a href="#" onclick="showPage('profile'); return false;" style="color:var(--rust);text-decoration:none;font-weight:500;">Update your profile →</a></p>
+      </div>`;
+      return;
+    }
+
+    const myOffers = currentUser.offersSkills || [];
+    const myWants  = currentUser.wantsSkills  || [];
+    const saved    = JSON.parse(localStorage.getItem('ss_saved_' + currentUser.email) || '[]');
+
+    grid.innerHTML = matches.map((m, idx) => {
+      const u = m.user;
+      const initials = (u.first[0] + (u.last?u.last[0]:'')).toUpperCase();
+      const avatarBg = getAvatarColor(u.first + (u.last||''));
+      const scoreClass = m.score >= 75 ? 'score-high' : m.score >= 50 ? 'score-med' : 'score-low';
+      const barColor   = m.score >= 75 ? '#3d5a3e' : m.score >= 50 ? '#b8860b' : '#c4501a';
+      const isSaved    = saved.includes(u.email);
+
+      // Build matching skill highlights
+      const theyCanTeach = (u.offersSkills||[]).filter(s =>
+        (myWants||[]).some(w => normalize(s).includes(normalize(w)) || normalize(w).includes(normalize(s)) || levenshtein(normalize(s),normalize(w))<=2)
+      ).slice(0,2);
+
+      const iCanTeach = (u.wantsSkills||[]).filter(s =>
+        (myOffers||[]).some(o => normalize(s).includes(normalize(o)) || normalize(o).includes(normalize(s)) || levenshtein(normalize(s),normalize(o))<=2)
+      ).slice(0,2);
+
+      const reason = generateReason(m, u, theyCanTeach, iCanTeach);
+
+      return `
+      <div class="match-card" style="animation-delay:${idx*0.07}s">
+        <div class="match-score-bar">
+          <div class="match-score-fill" style="width:${m.score}%; background:${barColor};"></div>
+        </div>
+        <div class="match-card-body">
+          <div class="match-top">
+            <div class="match-avatar" style="background:${avatarBg};">${initials}</div>
+            <div style="flex:1;min-width:0;">
+              <div class="match-name">${u.first} ${u.last||''}</div>
+              <div class="match-location">${u.location || 'Location unknown'}</div>
+            </div>
+            <span class="match-score-badge ${scoreClass}">${m.score}% match</span>
+          </div>
+          <div class="match-skills">
+            ${theyCanTeach.length ? `<div class="match-skill-row"><span class="skill-chip chip-want" style="font-size:0.75rem;padding:0.2rem 0.6rem;">${theyCanTeach[0]}</span><span class="arrow">→</span><span style="font-size:0.8rem;color:var(--muted);">you can learn this</span></div>` : ''}
+            ${iCanTeach.length ? `<div class="match-skill-row"><span class="skill-chip chip-offer" style="font-size:0.75rem;padding:0.2rem 0.6rem;">${iCanTeach[0]}</span><span class="arrow">→</span><span style="font-size:0.8rem;color:var(--muted);">they want to learn this</span></div>` : ''}
+            ${!theyCanTeach.length && !iCanTeach.length ? `<div style="font-size:0.8rem;color:var(--muted);">Potential skill overlap detected</div>` : ''}
+          </div>
+          <div class="match-reason">${reason}</div>
+        </div>
+        <div class="match-card-footer">
+          <button class="btn-connect" onclick="connectWith('${u.email}')">Request swap</button>
+          <button class="btn-save ${isSaved?'saved':''}" id="save-${u.email}" onclick="toggleSave('${u.email}')">${isSaved ? '♥ Saved' : '♡ Save'}</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Animate bars after render
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.match-score-fill').forEach(el => {
+        const w = el.style.width; el.style.width = '0'; setTimeout(() => el.style.width = w, 50);
+      });
+    });
+  }
+
+  function generateReason(m, u, theyTeach, iTeach) {
+    const parts = [];
+    if (theyTeach.length && iTeach.length)
+      parts.push(`${u.first} can teach you <strong>${theyTeach[0]}</strong> and wants to learn <strong>${iTeach[0]}</strong> from you`);
+    else if (theyTeach.length)
+      parts.push(`${u.first} offers <strong>${theyTeach[0]}</strong> which is on your wishlist`);
+    else if (iTeach.length)
+      parts.push(`${u.first} wants to learn <strong>${iTeach[0]}</strong>, which you can teach`);
+    else
+      parts.push(`${u.first} has complementary skills in ${(u.offersSkills||[]).slice(0,1).join(', ') || 'various areas'}`);
+
+    const myAvail = currentUser.availability || [];
+    const theirAvail = u.availability || [];
+    const shared = myAvail.filter(a => theirAvail.includes(a));
+    if (shared.length) parts.push(`you both have ${shared[0].toLowerCase()} free`);
+
+    return parts.join(' — ') + '.';
+  }
+
+  function connectWith(email) {
+    if (!currentUser) { openModal('login'); return; }
+    alert(`✓ Swap request sent to ${email}!\n\n(In production, this would send a notification and open a chat thread.)`);
+  }
+
+  function toggleSave(email) {
+    if (!currentUser) return;
+    const key = 'ss_saved_' + currentUser.email;
+    let saved = JSON.parse(localStorage.getItem(key) || '[]');
+    const btn = document.getElementById('save-' + email);
+    if (saved.includes(email)) {
+      saved = saved.filter(e => e !== email);
+      if (btn) { btn.textContent = '♡ Save'; btn.classList.remove('saved'); }
+    } else {
+      saved.push(email);
+      if (btn) { btn.textContent = '♥ Saved'; btn.classList.add('saved'); }
+    }
+    localStorage.setItem(key, JSON.stringify(saved));
+  }
+</script>
+<script>
+  console.log("TEST RUNNING");
+</script>
+</body>
+</html>
