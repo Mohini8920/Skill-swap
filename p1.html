@@ -1519,6 +1519,123 @@
     .profile-header-row { flex-direction: column; align-items: flex-start; }
     .profile-actions { margin-left: 0; }
   }
+
+  /* ── MESSAGING PAGE ── */
+  .messaging-page {
+    display: flex;
+    height: 100vh;
+    padding-top: 80px;
+  }
+
+  .messages-container {
+    display: flex;
+    width: 100%;
+    background: var(--paper);
+  }
+
+  .messages-sidebar {
+    width: 320px;
+    background: var(--cream);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .messages-chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--paper);
+  }
+
+  .conversation-item {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .conversation-item:hover { background: var(--paper); }
+  .conversation-item.active { background: var(--paper); border-left: 4px solid var(--rust); }
+
+  .conversation-name { font-weight: 500; color: var(--ink); }
+  .conversation-preview { font-size: 0.85rem; color: var(--muted); margin-top: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .message-bubble {
+    max-width: 70%;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    word-wrap: break-word;
+    font-size: 0.95rem;
+  }
+
+  .message-own { background: var(--ink); color: var(--paper); align-self: flex-end; }
+  .message-other { background: var(--cream); color: var(--ink); align-self: flex-start; }
+
+  .message-time { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+
+  /* ── REVIEWS PAGE ── */
+  .reviews-page { padding-top: 80px; background: var(--paper); min-height: 100vh; }
+
+  .review-item {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .review-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+
+  .review-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--cream);
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .review-info { flex: 1; }
+  .review-name { font-weight: 500; color: var(--ink); }
+  .review-date { font-size: 0.8rem; color: var(--muted); }
+
+  .review-rating { color: var(--gold); font-size: 1rem; }
+
+  .review-text { color: var(--muted); line-height: 1.6; font-size: 0.95rem; }
+
+  /* ── CALENDAR PAGE ── */
+  .calendar-page { padding-top: 80px; background: var(--paper); min-height: 100vh; }
+
+  .session-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .session-info { flex: 1; }
+  .session-title { font-weight: 500; color: var(--ink); margin-bottom: 0.25rem; }
+  .session-time { font-size: 0.9rem; color: var(--muted); }
+  .session-status { display: inline-block; padding: 0.35rem 0.75rem; background: var(--moss-light); color: var(--moss); border-radius: 3px; font-size: 0.8rem; font-weight: 500; }
+
+  @media (max-width: 900px) {
+    .messages-sidebar { width: 250px; }
+    .calendar-container { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 600px) {
+    .messages-container { flex-direction: column; }
+    .messages-sidebar { width: 100%; height: 200px; border-right: none; border-bottom: 1px solid var(--border); }
+    .message-bubble { max-width: 90%; }
+  }
+
 </style>
 </head>
 <body>
@@ -2076,6 +2193,105 @@
   </div>
 </div>
 
+<!-- ═══════════════ MESSAGING PAGE ═══════════════ -->
+<div id="page-messages" class="page messaging-page">
+  <div class="messages-container">
+    <div class="messages-sidebar">
+      <div style="padding:1rem; border-bottom:1px solid var(--border);">
+        <h3 style="font-size:1.1rem;margin-bottom:0.75rem;">Messages</h3>
+        <input type="text" id="chatSearch" placeholder="Search conversations..." style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:4px;font-size:0.9rem;">
+      </div>
+      <div id="conversationsList" style="overflow-y:auto;height:calc(100vh - 200px);"></div>
+    </div>
+    <div class="messages-chat">
+      <div id="noChatSelected" style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:1rem;">
+        Select a conversation to start messaging
+      </div>
+      <div id="chatWindow" style="display:none;height:100%;display:flex;flex-direction:column;">
+        <div style="padding:1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <h3 id="chatWith" style="font-size:1rem;margin:0;"></h3>
+            <span id="chatStatus" style="font-size:0.8rem;color:var(--muted);"></span>
+          </div>
+          <button onclick="openVideoCall()" style="padding:0.5rem 1rem;background:var(--rust);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.9rem;">📹 Video call</button>
+        </div>
+        <div id="messagesBox" style="flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.75rem;"></div>
+        <div style="padding:1rem;border-top:1px solid var(--border);display:flex;gap:0.5rem;">
+          <input type="text" id="messageInput" placeholder="Type a message..." style="flex:1;padding:0.7rem;border:1px solid var(--border);border-radius:4px;font-size:0.9rem;">
+          <button onclick="sendMessage()" style="padding:0.7rem 1.5rem;background:var(--ink);color:white;border:none;border-radius:4px;cursor:pointer;font-weight:500;">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ REVIEWS PAGE ═══════════════ -->
+<div id="page-reviews" class="page reviews-page">
+  <div class="reviews-container" style="max-width:900px;margin:0 auto;padding:2rem;">
+    <h2 style="font-family:'Playfair Display',serif;margin-bottom:2rem;">Your Reviews</h2>
+    
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:3rem;">
+      <div style="background:var(--cream);padding:2rem;border-radius:6px;text-align:center;">
+        <div style="font-family:'Playfair Display',serif;font-size:3rem;font-weight:700;color:var(--ink);" id="avgRating">—</div>
+        <div style="color:var(--muted);margin-top:0.5rem;">Average rating</div>
+        <div style="font-size:1.2rem;margin-top:0.75rem;" id="ratingStars">★★★★★</div>
+      </div>
+      <div style="background:var(--ink);color:var(--paper);padding:2rem;border-radius:6px;">
+        <h3 style="margin-bottom:1rem;">Rating breakdown</h3>
+        <div id="ratingBars"></div>
+      </div>
+    </div>
+
+    <h3 style="font-family:'Playfair Display',serif;margin:2rem 0 1rem;">Reviews from others</h3>
+    <div id="reviewsList"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ CALENDAR/BOOKING PAGE ═══════════════ -->
+<div id="page-calendar" class="page calendar-page">
+  <div class="calendar-container" style="max-width:1200px;margin:0 auto;padding:2rem;display:grid;grid-template-columns:2fr 1fr;gap:2rem;">
+    <div>
+      <h2 style="font-family:'Playfair Display',serif;margin-bottom:1.5rem;">My Sessions</h2>
+      <div id="upcomingSessions" style="display:flex;flex-direction:column;gap:1rem;"></div>
+      <div style="text-align:center;color:var(--muted);margin-top:2rem;" id="noSessions">No upcoming sessions</div>
+    </div>
+    <div>
+      <h3 style="font-family:'Playfair Display',serif;margin-bottom:1rem;">Schedule New Session</h3>
+      <div style="background:var(--cream);padding:1.5rem;border-radius:6px;">
+        <div class="form-group">
+          <label>With user</label>
+          <select id="sessionUser" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:4px;">
+            <option value="">Select...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="sessionDate" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:4px;">
+        </div>
+        <div class="form-group">
+          <label>Time</label>
+          <input type="time" id="sessionTime" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:4px;">
+        </div>
+        <div class="form-group">
+          <label>Duration (minutes)</label>
+          <input type="number" id="sessionDuration" placeholder="60" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:4px;">
+        </div>
+        <button onclick="scheduleSession()" style="width:100%;padding:0.75rem;background:var(--ink);color:white;border:none;border-radius:4px;cursor:pointer;font-weight:500;">Schedule</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VIDEO CALL MODAL -->
+<div class="modal-overlay" id="videoCallOverlay" onclick="closeVideoCall()" style="display:none;z-index:999;">
+  <div style="background:var(--ink);width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;">
+    <button onclick="closeVideoCall()" style="position:absolute;top:1rem;right:1rem;background:red;color:white;border:none;padding:0.6rem 1.2rem;border-radius:4px;cursor:pointer;font-weight:bold;">End Call</button>
+    <div id="videoContainer" style="width:90%;height:90%;background:#000;border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:1.2rem;">
+      <iframe id="jitsiContainer" style="width:100%;height:100%;border:none;border-radius:8px;"></iframe>
+    </div>
+  </div>
+</div>
+
 <!-- FOOTER -->
 <footer>
   <a href="#" class="logo">Skill<span>Swap</span></a>
@@ -2091,7 +2307,8 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, onSnapshot, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+  import { getDatabase, ref, set, get, push, onValue, update } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBGdoDoDvgluGHGPDIzVkE398uFm_6nUow",
@@ -2107,14 +2324,18 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
+  const rtdb = getDatabase(app);
   window.auth = auth;
   window.db = db;
+  window.rtdb = rtdb;
   window.firebaseFns = {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     doc, setDoc, getDoc,
     onAuthStateChanged,
-    signOut
+    signOut,
+    collection, addDoc, query, where, getDocs, updateDoc, onSnapshot, serverTimestamp, orderBy, limit,
+    ref, set, get, push, onValue, update
   };
    console.log("✅ Firebase Connected", app);
 </script>
@@ -2208,6 +2429,11 @@
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
 
+  if (!email || !password) {
+    alert("⚠️ Please fill in all fields");
+    return;
+  }
+
   try {
     const userCred = await firebaseFns.signInWithEmailAndPassword(auth, email, password);
     const user = userCred.user;
@@ -2217,13 +2443,23 @@
     if (docSnap.exists()) {
       currentUser = docSnap.data();
       currentUser.uid = user.uid;
+      currentUser.email = email;
 
+      signIn(currentUser, false);
       updateNavForUser(currentUser);
       showPage('profile');
+      console.log('✅ Login successful:', email);
     }
 
   } catch (error) {
-    alert("Login failed: " + error.message);
+    console.error('Login error:', error);
+    if (error.code === 'auth/user-not-found') {
+      alert("❌ Email not found");
+    } else if (error.code === 'auth/wrong-password') {
+      alert("❌ Incorrect password");
+    } else {
+      alert("❌ Login failed: " + error.message);
+    }
   }
 }
 
@@ -2234,28 +2470,53 @@
   const last = document.getElementById('regLast').value.trim();
   const email = document.getElementById('regEmail').value.trim();
   const password = document.getElementById('regPassword').value;
+  const goal = document.getElementById('regGoal').value;
+
+  if (!first || !email || !password || !goal) {
+    alert("⚠️ Please fill in all required fields");
+    return;
+  }
+
+  if (password.length < 6) {
+    alert("⚠️ Password must be at least 6 characters");
+    return;
+  }
 
   try {
     const userCred = await firebaseFns.createUserWithEmailAndPassword(auth, email, password);
     const user = userCred.user;
 
-    await firebaseFns.setDoc(firebaseFns.doc(db, "users", user.uid), {
+    const newUser = {
       first,
-      last,
+      last: last || '',
       email,
       bio: '',
       location: '',
       offersSkills: [],
       wantsSkills: [],
       availability: [],
-      swaps: 0
-    });
+      goal: goal,
+      swaps: 0,
+      createdAt: new Date().toISOString()
+    };
 
-    alert("✅ Account created!");
-    showPage('profile');
+    await firebaseFns.setDoc(firebaseFns.doc(db, "users", user.uid), newUser);
+
+    currentUser = newUser;
+    currentUser.uid = user.uid;
+
+    signIn(currentUser, true);
+    console.log('✅ Registration successful:', email);
 
   } catch (error) {
-    alert(error.message);
+    console.error('Registration error:', error);
+    if (error.code === 'auth/email-already-in-use') {
+      alert("❌ Email already registered");
+    } else if (error.code === 'auth/weak-password') {
+      alert("❌ Password is too weak");
+    } else {
+      alert("❌ Registration failed: " + error.message);
+    }
   }
 }
 
@@ -2608,6 +2869,345 @@ async function signOut() {
 </script>
 <script>
   console.log("TEST RUNNING");
+
+  /* ══════════════════════════════════════
+     MESSAGING SYSTEM
+  ══════════════════════════════════════ */
+  let currentChatUser = null;
+  let messagesListener = null;
+
+  async function loadConversations() {
+    if (!currentUser) return;
+    const conversationsList = document.getElementById('conversationsList');
+    conversationsList.innerHTML = '';
+
+    try {
+      const q = firebaseFns.query(
+        firebaseFns.collection(db, 'messages'),
+        firebaseFns.where('participants', 'array-contains', currentUser.email),
+        firebaseFns.orderBy('lastUpdated', 'desc')
+      );
+      const querySnapshot = await firebaseFns.getDocs(q);
+      
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        const otherUser = data.participants.find(p => p !== currentUser.email);
+        const preview = data.lastMessage || 'No messages yet';
+        
+        const div = document.createElement('div');
+        div.className = 'conversation-item';
+        div.onclick = () => selectConversation(otherUser, doc.id);
+        div.innerHTML = `
+          <div class="conversation-name">${otherUser}</div>
+          <div class="conversation-preview">${preview}</div>
+        `;
+        conversationsList.appendChild(div);
+      });
+    } catch (error) {
+      console.log('Conversations load error (normal on first use):', error.message);
+    }
+  }
+
+  async function selectConversation(userEmail, conversationId) {
+    currentChatUser = userEmail;
+    document.getElementById('noChatSelected').style.display = 'none';
+    document.getElementById('chatWindow').style.display = 'flex';
+    document.getElementById('chatWith').textContent = userEmail;
+    
+    const messagesBox = document.getElementById('messagesBox');
+    messagesBox.innerHTML = '';
+
+    if (messagesListener) messagesListener();
+
+    try {
+      const q = firebaseFns.query(
+        firebaseFns.collection(db, 'messages', conversationId, 'chats'),
+        firebaseFns.orderBy('timestamp', 'asc')
+      );
+
+      messagesListener = firebaseFns.onSnapshot(q, (snapshot) => {
+        messagesBox.innerHTML = '';
+        snapshot.forEach(doc => {
+          const msg = doc.data();
+          const div = document.createElement('div');
+          div.className = `message-bubble ${msg.from === currentUser.email ? 'message-own' : 'message-other'}`;
+          div.innerHTML = `${msg.text}<div class="message-time">${new Date(msg.timestamp).toLocaleTimeString()}</div>`;
+          messagesBox.appendChild(div);
+        });
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+      });
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    }
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const text = input.value.trim();
+    if (!text || !currentChatUser || !currentUser) return;
+
+    try {
+      const conversationId = [currentUser.email, currentChatUser].sort().join('_');
+      const conversationRef = firebaseFns.doc(db, 'messages', conversationId);
+      const chatsRef = firebaseFns.collection(conversationId, 'chats');
+
+      await firebaseFns.addDoc(
+        firebaseFns.collection(db, 'messages', conversationId, 'chats'),
+        {
+          from: currentUser.email,
+          text: text,
+          timestamp: new Date().toISOString()
+        }
+      );
+
+      await firebaseFns.updateDoc(conversationRef, {
+        lastMessage: text,
+        lastUpdated: firebaseFns.serverTimestamp(),
+        participants: [currentUser.email, currentChatUser]
+      }).catch(() => {
+        firebaseFns.setDoc(conversationRef, {
+          participants: [currentUser.email, currentChatUser],
+          lastMessage: text,
+          lastUpdated: firebaseFns.serverTimestamp()
+        });
+      });
+
+      input.value = '';
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  }
+
+  /* ══════════════════════════════════════
+     REVIEWS & RATINGS SYSTEM
+  ══════════════════════════════════════ */
+  async function loadReviews() {
+    if (!currentUser) return;
+    try {
+      const q = firebaseFns.query(
+        firebaseFns.collection(db, 'reviews'),
+        firebaseFns.where('forUser', '==', currentUser.email),
+        firebaseFns.orderBy('createdAt', 'desc')
+      );
+      const reviews = await firebaseFns.getDocs(q);
+      const reviewsList = document.getElementById('reviewsList');
+      reviewsList.innerHTML = '';
+
+      let totalRating = 0;
+      let count = 0;
+
+      reviews.forEach(doc => {
+        const review = doc.data();
+        totalRating += review.rating;
+        count++;
+
+        const div = document.createElement('div');
+        div.className = 'review-item';
+        div.innerHTML = `
+          <div class="review-header">
+            <div class="review-avatar">${review.fromUser[0]}</div>
+            <div class="review-info">
+              <div class="review-name">${review.fromUser}</div>
+              <div class="review-date">${new Date(review.createdAt).toLocaleDateString()}</div>
+            </div>
+            <div class="review-rating">${'★'.repeat(review.rating)}${'☆'.repeat(5-review.rating)}</div>
+          </div>
+          <div class="review-text">${review.text}</div>
+        `;
+        reviewsList.appendChild(div);
+      });
+
+      const avg = count > 0 ? (totalRating / count).toFixed(1) : 0;
+      document.getElementById('avgRating').textContent = avg;
+      document.getElementById('ratingStars').textContent = '★'.repeat(Math.round(avg)) + '☆'.repeat(5-Math.round(avg));
+
+      const ratingBars = document.getElementById('ratingBars');
+      ratingBars.innerHTML = '';
+      for (let i = 5; i >= 1; i--) {
+        const barCount = reviews.docs.filter(d => d.data().rating === i).length;
+        const percent = count > 0 ? (barCount / count) * 100 : 0;
+        ratingBars.innerHTML += `
+          <div style="margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem;">
+            <span style="font-size:0.9rem;">${i}★</span>
+            <div style="flex:1;background:rgba(255,255,255,0.2);height:6px;border-radius:3px;">
+              <div style="width:${percent}%;background:var(--gold);height:100%;border-radius:3px;transition:width 0.3s;"></div>
+            </div>
+            <span style="font-size:0.8rem;">${barCount}</span>
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.log('Error loading reviews:', error.message);
+    }
+  }
+
+  async function submitReview(forUserEmail, rating, text) {
+    if (!currentUser) return;
+    try {
+      await firebaseFns.addDoc(firebaseFns.collection(db, 'reviews'), {
+        forUser: forUserEmail,
+        fromUser: currentUser.email,
+        rating: rating,
+        text: text,
+        createdAt: new Date().toISOString()
+      });
+      alert('✅ Review submitted!');
+      loadReviews();
+    } catch (error) {
+      alert('Error submitting review: ' + error.message);
+    }
+  }
+
+  /* ══════════════════════════════════════
+     CALENDAR & BOOKING SYSTEM
+  ══════════════════════════════════════ */
+  async function loadSessions() {
+    if (!currentUser) return;
+    try {
+      const q = firebaseFns.query(
+        firebaseFns.collection(db, 'sessions'),
+        firebaseFns.where('participants', 'array-contains', currentUser.email),
+        firebaseFns.orderBy('scheduledDate', 'asc')
+      );
+      const sessions = await firebaseFns.getDocs(q);
+      const upcomingSessions = document.getElementById('upcomingSessions');
+      const noSessions = document.getElementById('noSessions');
+      
+      upcomingSessions.innerHTML = '';
+      if (sessions.docs.length === 0) {
+        noSessions.style.display = 'block';
+        return;
+      }
+      noSessions.style.display = 'none';
+
+      sessions.forEach(doc => {
+        const session = doc.data();
+        const div = document.createElement('div');
+        div.className = 'session-card';
+        const date = new Date(session.scheduledDate);
+        div.innerHTML = `
+          <div class="session-info">
+            <div class="session-title">${session.skill} with ${session.participants.find(p => p !== currentUser.email)}</div>
+            <div class="session-time">${date.toLocaleDateString()} at ${date.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+          </div>
+          <div class="session-status">${session.status || 'Scheduled'}</div>
+        `;
+        upcomingSessions.appendChild(div);
+      });
+    } catch (error) {
+      console.log('Error loading sessions:', error.message);
+    }
+  }
+
+  async function scheduleSession() {
+    if (!currentUser) return;
+    const userEmail = document.getElementById('sessionUser').value;
+    const date = document.getElementById('sessionDate').value;
+    const time = document.getElementById('sessionTime').value;
+    const duration = document.getElementById('sessionDuration').value;
+
+    if (!userEmail || !date || !time) { alert('Please fill in all fields'); return; }
+
+    try {
+      const sessionDate = new Date(`${date}T${time}`);
+      await firebaseFns.addDoc(firebaseFns.collection(db, 'sessions'), {
+        participants: [currentUser.email, userEmail],
+        skill: 'Skill Exchange',
+        scheduledDate: sessionDate.toISOString(),
+        duration: parseInt(duration) || 60,
+        status: 'Pending',
+        createdAt: new Date().toISOString()
+      });
+      alert('✅ Session scheduled!');
+      document.getElementById('sessionDate').value = '';
+      document.getElementById('sessionTime').value = '';
+      document.getElementById('sessionDuration').value = '';
+      loadSessions();
+    } catch (error) {
+      alert('Error scheduling session: ' + error.message);
+    }
+  }
+
+  /* ══════════════════════════════════════
+     VIDEO CALL INTEGRATION (JITSI)
+  ══════════════════════════════════════ */
+  function openVideoCall() {
+    if (!currentChatUser) return;
+    const roomName = [currentUser.email, currentChatUser].sort().join('_').replace(/[^a-z0-9_]/g, '_');
+    document.getElementById('videoCallOverlay').style.display = 'flex';
+    
+    const jitsiContainer = document.getElementById('jitsiContainer');
+    const script = document.createElement('script');
+    script.src = 'https://meet.jitsi.org/external_api.js';
+    document.head.appendChild(script);
+
+    setTimeout(() => {
+      const JitsiMeetExternalAPI = window.JitsiMeetExternalAPI;
+      if (JitsiMeetExternalAPI) {
+        window.jitsiApi = new JitsiMeetExternalAPI('meet.jitsi.org', {
+          roomName: roomName,
+          width: '100%',
+          height: '100%',
+          parentNode: jitsiContainer,
+          userInfo: {
+            displayName: currentUser.first + ' ' + (currentUser.last || '')
+          }
+        });
+      }
+    }, 1000);
+  }
+
+  function closeVideoCall() {
+    if (window.jitsiApi) {
+      window.jitsiApi.dispose();
+      window.jitsiApi = null;
+    }
+    document.getElementById('videoCallOverlay').style.display = 'none';
+  }
+
+  /* ══════════════════════════════════════
+     LOAD ALL DATA ON PAGE CHANGE
+  ══════════════════════════════════════ */
+  const originalShowPage = showPage;
+  showPage = function(name) {
+    originalShowPage(name);
+    if (name === 'messages') {
+      loadConversations();
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    if (name === 'reviews') loadReviews();
+    if (name === 'calendar') {
+      loadSessions();
+      populateSessionUsers();
+    }
+  };
+
+  function populateSessionUsers() {
+    const select = document.getElementById('sessionUser');
+    select.innerHTML = '<option value="">Select...</option>';
+    const matches = computeMatchesForUser(currentUser);
+    matches.forEach(m => {
+      const option = document.createElement('option');
+      option.value = m.user.email;
+      option.textContent = m.user.first + ' ' + (m.user.last || '');
+      select.appendChild(option);
+    });
+  }
+
+  // Update nav to include messaging and calendar
+  const originalUpdateNavForUser = updateNavForUser;
+  updateNavForUser = function(user) {
+    originalUpdateNavForUser(user);
+    const navUser = document.getElementById('navUser');
+    navUser.innerHTML += `
+      <a href="#" style="font-size:0.82rem;color:var(--muted);text-decoration:none;margin:0 0.25rem;" onclick="showPage('messages'); return false;">💬 Messages</a>
+      <a href="#" style="font-size:0.82rem;color:var(--muted);text-decoration:none;margin:0 0.25rem;" onclick="showPage('calendar'); return false;">📅 Calendar</a>
+      <a href="#" style="font-size:0.82rem;color:var(--muted);text-decoration:none;margin:0 0.25rem;" onclick="showPage('reviews'); return false;">⭐ Reviews</a>
+    `;
+  };
+
 </script>
 </body>
 </html>
