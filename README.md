@@ -61,54 +61,6 @@ SkillSwap is a modern peer-to-peer skill exchange platform where users can conne
 
 ---
 
-## 🚀 Getting Started
-
-### Prerequisites
-- Modern web browser (Chrome, Firefox, Safari, Edge)
-- Firebase project with:
-  - Authentication enabled
-  - Firestore Database
-  - Realtime Database
-  - Analytics (optional)
-
-### Installation
-
-1. **Clone the Repository**
-```bash
-git clone https://github.com/Mohini8920/Skill-swap.git
-cd Skill-swap
-```
-
-2. **Update Firebase Configuration**
-Open `p1.html` and update the `firebaseConfig` object with your Firebase credentials:
-```javascript
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project-id",
-  databaseURL: "https://your-project-rtdb.firebaseio.com",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID"
-};
-```
-
-3. **Open in Browser**
-- Simply open `p1.html` in your web browser
-- No build process or npm install needed!
-
-### Firebase Setup
-
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Create a new project (or use existing)
-3. Enable authentication (Email/Password)
-4. Create Firestore Database
-5. Create Realtime Database
-6. Copy credentials to `p1.html`
-
----
-
 ## 📖 User Guide
 
 ### Creating an Account
